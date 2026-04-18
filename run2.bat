@@ -1,1 +1,0 @@
-python sort_photos.py --source "C:\Users\kermo\Documents\PhotoSort\SsdDrive2" --dest "D:\Pictures"  --recursive --log "C:\Users\kermo\Documents\PhotoSort\sort_photos_oldDrive2.log"

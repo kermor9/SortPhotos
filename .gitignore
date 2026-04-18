@@ -37,6 +37,14 @@ sync_report.csv
 event_report.csv
 duplicate_report.csv
 
+# Local scripts (not part of repo)
+*.bat
+*.ps1
+CHANGES.md
+OPTIMIZATION_SUMMARY.md
+TestdB.session.sql
+test_photo_utils.py
+
 # C extensions
 *.so
 
