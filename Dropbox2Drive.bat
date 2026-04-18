@@ -1,0 +1,1 @@
+python sort_photos.py --source "C:\Dropbox\Camera Uploads" --dest "D:\Pictures"  --recursive --log "C:\Users\kermo\Documents\PhotoSort\sort_photos_dB.log"

@@ -1,0 +1,1 @@
+SELECT path, size, mtime, sha FROM files
