@@ -61,6 +61,9 @@ pip install -r requirements.txt
 # Dry-run to preview actions (recommended first!)
 python sort_photos.py --source "C:\Photos\Unsorted" --dest "C:\Photos\Sorted" --dry-run --recursive
 
+# Copy files instead of moving them
+python sort_photos.py --source "C:\Photos\Unsorted" --dest "C:\Photos\Sorted" --copy --recursive
+
 # Full processing run
 python sort_photos.py --source "C:\Photos\Unsorted" --dest "C:\Photos\Sorted" --recursive
 ```
@@ -97,6 +100,7 @@ python duplicate_checker.py --source "C:\Photos\ToCheck" --duplicate "C:\Photos\
 - `--dest, -d`: Destination base directory (default: same as source)
 - `--recursive`: Scan subdirectories recursively
 - `--dry-run`: Preview actions without modifying files
+- `--copy`: Copy files to destination instead of moving them
 
 ### Indexing & Performance
 - `--index-file`: Path to index file (default: `DEST/.sort_photos_index.db`)

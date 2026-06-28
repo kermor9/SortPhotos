@@ -35,7 +35,7 @@ from photo_utils import (
     IMAGE_EXTENSIONS, VIDEO_EXTENSIONS,
     FileMetadata, IndexManager, DuplicateHandler,
     get_video_datetime, setup_logging, get_exif_data, file_mtime_datetime,
-    safe_move, format_filename, compute_quick_hash,
+    safe_move, safe_copy, format_filename, compute_quick_hash,
     load_ignore_patterns, should_ignore
 )
 
@@ -269,6 +269,7 @@ class PhotoProcessor:
         index_manager: IndexManager,
         duplicate_handler: DuplicateHandler,
         dry_run: bool = False,
+        copy_files: bool = False,
         recursive: bool = False,
         workers: Optional[int] = None
     ):
@@ -279,6 +280,7 @@ class PhotoProcessor:
         self.index_manager = index_manager
         self.duplicate_handler = duplicate_handler
         self.dry_run = dry_run
+        self.copy_files = copy_files
         self.recursive = recursive
         self.workers = workers or max(2, (os.cpu_count() or 1))
 
@@ -552,8 +554,8 @@ class PhotoProcessor:
                     return {"events": events, "duplicates": duplicates, "collisions": collisions}
 
             # Not a duplicate - name collision, move with suffix
-            self.logger.debug(f"Name collision at {target_path}, moving with suffix")
-            moved_to = safe_move(metadata.path, target_path, self.dry_run)
+            self.logger.debug(f"Name collision at {target_path}, transferring with suffix")
+            moved_to = self._transfer_file(metadata.path, target_path, "name_collision")
             metadata.moved_path = moved_to
             events.append(("Moved with name collision", metadata.path.name, str(metadata.path), str(moved_to), "name_collision"))
             collisions.append((metadata.path.name, str(metadata.path), str(target_path), str(moved_to)))
@@ -562,8 +564,8 @@ class PhotoProcessor:
             self.stats["moved"] += 1
         else:
             # Normal move - no conflict
-            self.logger.debug(f"Moving to: {target_path}")
-            moved_to = safe_move(metadata.path, target_path, self.dry_run)
+            self.logger.debug(f"Transferring to: {target_path}")
+            moved_to = self._transfer_file(metadata.path, target_path, "Normal move")
             metadata.moved_path = moved_to
             events.append(("Moved", metadata.path.name, str(metadata.path), str(moved_to), "Normal move"))
             if not self.dry_run:
@@ -616,8 +618,14 @@ class PhotoProcessor:
             self.logger.debug(f"Could not reconstruct metadata for {target_path}: {e}")
             return None
 
+    def _transfer_file(self, src: Path, dest: Path, reason: str) -> Path:
+        """Move or copy a file according to configured transfer mode."""
+        if self.copy_files:
+            return safe_copy(src, dest, self.dry_run)
+        return safe_move(src, dest, self.dry_run)
+
     def _move_to_folder(self, src: Path, existing: Optional[Path], folder: Path, reason: str) -> Path:
-        """Move a file to a quarantine/duplicate folder. Returns the path of the moved file."""
+        """Move or copy a file to a quarantine/duplicate folder. Returns the resulting path."""
         folder.mkdir(parents=True, exist_ok=True)
         target = folder / src.name
         # Handle name collisions in quarantine folder
@@ -631,8 +639,7 @@ class PhotoProcessor:
             self.logger.warning(f"Name collision in quarantine folder, new target: {target}")
         
         if not self.dry_run:
-            shutil.move(str(src), str(target))
-        self.logger.info(f"[{'DRY' if self.dry_run else 'MOVED'}] {reason}: {src} -> {target}")
+            self._transfer_file(src, target, reason)
         return target
 
 
@@ -687,6 +694,7 @@ def main(argv=None):
     parser.add_argument("--log", help="Log file path (default: <dest>/sort_photos.log)")
     parser.add_argument("--verbose", action="store_true", help="Enable verbose (debug) logging to console")
     parser.add_argument("--dry-run", action="store_true", help="Don't move or rename files; just show planned actions")
+    parser.add_argument("--copy", action="store_true", help="Copy files to destination instead of moving them")
     parser.add_argument("--recursive", action="store_true", default=True, help="Scan subdirectories recursively")
     args = parser.parse_args(argv)
 
@@ -760,6 +768,7 @@ def main(argv=None):
         index_manager=index_manager,
         duplicate_handler=duplicate_handler,
         dry_run=args.dry_run,
+        copy_files=args.copy,
         recursive=args.recursive,
         workers=None  # Use default number of workers based on CPU count
     )

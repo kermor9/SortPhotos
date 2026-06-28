@@ -526,6 +526,24 @@ def safe_move(src: Path, dest: Path, dry_run: bool) -> Path:
     return candidate
 
 
+def safe_copy(src: Path, dest: Path, dry_run: bool) -> Path:
+    logger = logging.getLogger(__name__)
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    candidate = dest
+    i = 1
+    while candidate.exists():
+        stem = dest.stem
+        suffix = f"-{i}"
+        candidate = dest.with_name(f"{stem}{suffix}{dest.suffix}")
+        i += 1
+    if dry_run:
+        logger.info(f"[DRY] Copy: {src} -> {candidate}")
+        return candidate
+    logger.info(f"Copy: {src} -> {candidate}")
+    shutil.copy2(str(src), str(candidate))
+    return candidate
+
+
 def safe_rename_inplace(src: Path, new_name: str, dry_run: bool) -> Path:
     logger = logging.getLogger(__name__)
     target = src.with_name(new_name)
